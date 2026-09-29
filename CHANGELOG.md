@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.2] - 2026-09-29
+### Corretto
+- **Blocco reale dopo "Chiudo Explorer e cancello la cache icone"**: `ie4uinit.exe -ClearIconCache`, lanciato
+  con Explorer chiuso, resta in attesa della shell all'infinito. Ora viene eseguito solo dopo il riavvio di
+  Explorer, e senza attenderne la fine (anche `ie4uinit -show` nell'opzione di ripristino icone desktop)
+
 ## [1.0.1] - 2026-09-29
 ### Corretto
 - **Explorer non ripartiva** dopo la ricostruzione cache icone / riavvio shell: lanciato da un prompt elevato,

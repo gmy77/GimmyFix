@@ -152,7 +152,7 @@ if "%S%"=="3" (
     call :step "Ripristino icone desktop e reset dimensione icone"
     reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel" /f >nul 2>&1
     reg delete "HKCU\Software\Microsoft\Windows\Shell\Bags\1\Desktop" /v IconSize /f >nul 2>&1
-    ie4uinit.exe -show
+    start "" ie4uinit.exe -show
     call :ok "Fatto - se serve, apri: ms-settings:themes → Impostazioni icone del desktop"
     call :pausa
 )
@@ -169,9 +169,10 @@ if "%~1"=="1" (
     del /a /q /f "%LOCALAPPDATA%\Microsoft\Windows\Explorer\thumbcache_*.db" >nul 2>&1
     call :ok "Cache miniature cancellata"
 )
-ie4uinit.exe -ClearIconCache >nul 2>&1
 call :ok "Cache icone cancellata"
 call :STARTEXPLORER
+:: ie4uinit SOLO con la shell attiva e senza attenderlo: senza Explorer resta appeso all'infinito
+tasklist /fi "imagename eq explorer.exe" /nh 2>nul | find /i "explorer.exe" >nul && start "" ie4uinit.exe -ClearIconCache
 call :pausa
 exit /b
 
