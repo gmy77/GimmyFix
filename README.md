@@ -15,7 +15,7 @@
 ![Windows 11](https://img.shields.io/badge/Windows-11%20Insider-0078D4?logo=windows11&logoColor=white)
 ![Batch](https://img.shields.io/badge/Batch%20%2B%20PowerShell-single%20file-4D4D4D)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.0.1-blue)
 
 *By Pignolo Gimmy e Fable 5.1*
 

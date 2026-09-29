@@ -170,8 +170,8 @@ if "%~1"=="1" (
     call :ok "Cache miniature cancellata"
 )
 ie4uinit.exe -ClearIconCache >nul 2>&1
-start "" explorer.exe
-call :ok "Cache icone ricostruita, Explorer riavviato"
+call :ok "Cache icone cancellata"
+call :STARTEXPLORER
 call :pausa
 exit /b
 
@@ -261,8 +261,7 @@ set /p "S=%WH%  Scelta ► %R%"
 if "%S%"=="1" (
     taskkill /f /im explorer.exe >nul 2>&1
     timeout /t 1 >nul
-    start "" explorer.exe
-    call :ok "Explorer riavviato"
+    call :STARTEXPLORER
     call :pausa
 )
 if "%S%"=="2" call :REREGSHELL
@@ -279,9 +278,10 @@ taskkill /f /im StartMenuExperienceHost.exe >nul 2>&1
 taskkill /f /im ShellExperienceHost.exe >nul 2>&1
 taskkill /f /im SearchHost.exe >nul 2>&1
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$pk='Microsoft.Windows.StartMenuExperienceHost','Microsoft.Windows.ShellExperienceHost','MicrosoftWindows.Client.CBS','Microsoft.Windows.Search','Microsoft.UI.Xaml.*','Microsoft.WindowsAppRuntime.*'; foreach($p in $pk){ Get-AppxPackage -AllUsers $p -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ('  > ' + $_.Name); Add-AppxPackage -DisableDevelopmentMode -Register ($_.InstallLocation + '\AppxManifest.xml') -ErrorAction SilentlyContinue } }"
+call :ok "Pacchetti shell ri-registrati"
 taskkill /f /im explorer.exe >nul 2>&1
-start "" explorer.exe
-call :ok "Shell ri-registrata"
+timeout /t 1 >nul
+call :STARTEXPLORER
 call :pausa
 exit /b
 
@@ -459,7 +459,7 @@ call :log "-- %~1"
 exit /b
 
 :step
-echo   %YE%▶ %~1%R%
+echo   %YE%► %~1%R%
 call :log "   step: %~1"
 exit /b
 
@@ -467,6 +467,43 @@ exit /b
 echo   %GR%✔ %~1%R%
 call :log "   ok:   %~1"
 exit /b
+
+:: ----------------------------------------------------------------------------
+:: STARTEXPLORER - Explorer lanciato da un prompt ELEVATO non parte come shell:
+:: cerca di delegare a una shell esistente, non la trova e si chiude in silenzio.
+:: Strategia: 1) riavvio automatico di Winlogon  2) attivita pianificata come
+::            utente normale (/IT /RL LIMITED)  3) runas /trustlevel  4) istruzioni
+:STARTEXPLORER
+call :step "Riavvio Explorer come utente normale (non elevato)"
+call :WAITEXP 5 && goto :EXPOK
+set "IUSER="
+for /f "usebackq delims=" %%u in (`powershell -NoProfile -Command "(Get-CimInstance Win32_ComputerSystem).UserName"`) do set "IUSER=%%u"
+if not defined IUSER set "IUSER=%USERDOMAIN%\%USERNAME%"
+schtasks /create /tn "GimmyFix_Explorer" /tr "%WINDIR%\explorer.exe" /sc once /st 23:59 /ru "%IUSER%" /it /rl limited /f >nul 2>&1
+schtasks /run /tn "GimmyFix_Explorer" >nul 2>&1
+call :WAITEXP 8
+set "EXPRC=%errorlevel%"
+schtasks /delete /tn "GimmyFix_Explorer" /f >nul 2>&1
+if "%EXPRC%"=="0" goto :EXPOK
+runas /trustlevel:0x20000 "%WINDIR%\explorer.exe" >nul 2>&1
+call :WAITEXP 6 && goto :EXPOK
+echo   %RE%✖ Explorer non si e riavviato da solo.%R%
+echo   %WH%  Premi Ctrl+Shift+Esc ^> Esegui nuova attivita ^> scrivi explorer ^> Invio%R%
+call :log "   ERR:  Explorer non riavviato (utente %IUSER%)"
+exit /b 1
+:EXPOK
+call :ok "Explorer attivo"
+exit /b 0
+
+:WAITEXP
+:: attende fino a %1 secondi che explorer.exe sia in esecuzione
+set /a "_WN=%~1"
+:WAITEXP_LOOP
+tasklist /fi "imagename eq explorer.exe" /nh 2>nul | find /i "explorer.exe" >nul && exit /b 0
+set /a "_WN-=1"
+if %_WN% LEQ 0 exit /b 1
+timeout /t 1 /nobreak >nul
+goto :WAITEXP_LOOP
 
 :pausa
 echo.
@@ -501,7 +538,7 @@ $since14 = (Get-Date).AddDays(-14)
 
 function Add-Issue($sev,$area,$msg,$fix){ $script:issues += [pscustomobject]@{Sev=$sev;Area=$area;Msg=$msg;Fix=$fix} }
 function Out($t,$c='Gray'){ Write-Host $t -ForegroundColor $c; $script:lines += $t }
-function T($t){ Out '' ; Out ("  ▶ " + $t) 'Yellow' }
+function T($t){ Out '' ; Out ("  ► " + $t) 'Yellow' }
 function OK($t){ Out ("    ✔ " + $t) 'Green' }
 function WA($t){ Out ("    ⚠ " + $t) 'DarkYellow' }
 function KO($t){ Out ("    ✖ " + $t) 'Red' }
